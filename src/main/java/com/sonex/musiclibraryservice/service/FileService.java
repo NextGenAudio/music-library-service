@@ -141,10 +141,18 @@ public class FileService {
 
 
 
-    public List<FileInfo> listFiles() {
+    public List<FileInfo> listFiles(Long folderId) {
         String userId = getCurrentUserId();
-        return fileRepository.findByUserId(userId); // ✅ filter by user
+
+        if (folderId != null) {
+            // filter by both user and folder
+            return fileRepository.findByUserIdAndFolderId(userId, folderId);
+        }
+
+        // if no folder specified → return all files of user
+        return fileRepository.findByUserId(userId);
     }
+
 
     public Resource getFile(String filename) throws MalformedURLException {
         String userId = getCurrentUserId();

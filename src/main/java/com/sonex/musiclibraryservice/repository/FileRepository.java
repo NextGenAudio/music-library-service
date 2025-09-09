@@ -11,4 +11,6 @@ public interface FileRepository extends JpaRepository<FileInfo, Long> {
 
 
     List<FileInfo> findByUserId(String userId);
+
+    List<FileInfo> findByUserIdAndFolderId(String userId, Long folderId);
 }

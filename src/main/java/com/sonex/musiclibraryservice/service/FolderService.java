@@ -45,7 +45,10 @@ public class FolderService {
 
             try {
                 String uploadDir = "E:/Sonex/Software Development/photos/uploads";
+                String relativePath = "uploads/" + userId + "/";
+
                 Path userDir = Paths.get(uploadDir, userId);
+
                 Files.createDirectories(userDir); // ✅ ensure per-user folder exists
 
                 // ✅ unique filename to prevent overwrites
@@ -57,7 +60,7 @@ public class FolderService {
                 artwork.transferTo(filePath.toFile());
 
                 // ✅ Save relative path (or absolute if needed)
-                folder.setFolderArt(userDir.resolve(uniqueFileName).toString());
+                folder.setFolderArt(relativePath + uniqueFileName);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to save artwork file", e);
             }

@@ -43,6 +43,9 @@ public class FileInfo {
     @Column(name="album")
     private String album;
 
+    @Column(name = "folder_id")
+    private Long folderId;
+
     @Column(name="metadata", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> metadata;

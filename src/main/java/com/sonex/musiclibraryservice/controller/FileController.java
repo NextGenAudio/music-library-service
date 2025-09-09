@@ -38,9 +38,10 @@ public class FileController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<List<FileInfo>> listFiles() {
-        return ResponseEntity.ok(fileService.listFiles());
+    public ResponseEntity<List<FileInfo>> listFiles(@RequestParam(required = false) Long folderId) {
+        return ResponseEntity.ok(fileService.listFiles(folderId));
     }
+
 
     @GetMapping("/download/{filename}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String filename) {

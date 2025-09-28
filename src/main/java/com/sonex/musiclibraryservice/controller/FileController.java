@@ -1,5 +1,6 @@
 package com.sonex.musiclibraryservice.controller;
 
+import com.sonex.musiclibraryservice.service.FolderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import com.sonex.musiclibraryservice.model.FileInfo;
@@ -25,12 +26,15 @@ public class FileController {
     @Autowired
     public FileController(FileService fileService) {
         this.fileService = fileService;
+
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<FileInfo> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<FileInfo> uploadFile(@RequestParam("file") MultipartFile file,
+                                               @RequestParam(value = "folderId") String folderId) {
+        System.out.println("folderid"+folderId);
         try {
-            FileInfo savedFile = fileService.saveFile(file);
+            FileInfo savedFile = fileService.saveFile(file, folderId);
             return ResponseEntity.ok(savedFile);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -42,17 +46,45 @@ public class FileController {
         return ResponseEntity.ok(fileService.listFiles(folderId));
     }
 
-
     @GetMapping("/download/{filename}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String filename) {
         try {
-            Resource resource = fileService.getFile(filename);
+            Resource resource = fileService.getFile( filename);
+
+            String contentType = "audio/mpeg"; // or detect based on extension (.mp3, .wav, etc.)
+
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.ACCEPT_RANGES, "bytes") // ✅ enable seeking
+                    .contentType(MediaType.parseMediaType(contentType))
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);
         } catch (MalformedURLException e) {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PostMapping("/{id}/like")
+    public ResponseEntity<FileInfo> likeMusic(
+            @PathVariable Long id,
+            @RequestParam("like") boolean like) {
+
+        FileInfo updatedFile = fileService.addLike(id, like);
+        if (updatedFile == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(updatedFile);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteFile(@PathVariable Long id) {
+        fileService.deleteFile(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/favorite")
+    public ResponseEntity<List<FileInfo>> favoriteFiles() {
+        return ResponseEntity.ok(fileService.favoriteFiles());
+    }
+
 }

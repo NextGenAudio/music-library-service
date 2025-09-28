@@ -1,14 +1,20 @@
 package com.sonex.musiclibraryservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sonex.musiclibraryservice.model.Folder;
+import com.sonex.musiclibraryservice.repository.FolderRepository;
 import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.tag.images.Artwork;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.UrlResource;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -33,6 +39,12 @@ import org.jaudiotagger.tag.FieldKey;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import javax.crypto.spec.SecretKeySpec;
 
@@ -40,12 +52,16 @@ import javax.crypto.spec.SecretKeySpec;
 public class FileService {
 
     private final FileRepository fileRepository;
-    private final String uploadDir = "E:/Sonex/Software Development/songs/uploads"; // server folder
+    @Autowired
+    private FolderRepository folderRepository;
 
+    @Autowired
+    private S3Client s3Client;
+    private final String bucketName = "sonex2";
 
-    public FileService(FileRepository fileRepository) {
+    Artwork artwork = null;
+    public FileService(FileRepository fileRepository ) {
         this.fileRepository = fileRepository;
-
     }
     private String getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -57,24 +73,29 @@ public class FileService {
         return auth.getName();
     }
 
-    public FileInfo saveFile(MultipartFile file) throws IOException {
+    public FileInfo saveFile(MultipartFile file , String folderId) throws IOException {
         String userId = getCurrentUserId();
         System.out.println("user id " + userId);
 
-        // Create per-user directory
-        Path userDir = Paths.get(uploadDir, userId);
-        Files.createDirectories(userDir); // ✅ ensures folder exists
-
-        // Clean file name
         String filename = Paths.get(file.getOriginalFilename()).getFileName().toString();
 
-        // Define storage path inside user’s folder
-        Path filePath = userDir.resolve(filename);
+        // ✅ Define S3 key: userId/folderId/filename
+        String s3Key = userId + "/musics/" + filename;
 
-        // Save file to disk
+        // ✅ Upload to S3
         try (InputStream inputStream = file.getInputStream()) {
-            Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+            s3Client.putObject(
+                    PutObjectRequest.builder()
+                            .bucket(bucketName)
+                            .key(s3Key)
+                            .contentType(file.getContentType())
+                            .build(),
+                    RequestBody.fromInputStream(inputStream, file.getSize())
+            );
         }
+
+        // ✅ Build S3 file URL
+        String fileUrl = "https://" + bucketName + ".s3.amazonaws.com/" + s3Key;
 
         // Metadata variables
         Tag tag = null;
@@ -82,21 +103,27 @@ public class FileService {
         Artwork artwork = null;
 
         try {
-            AudioFile audioFile = AudioFileIO.read(filePath.toFile());
+            File tempFile = File.createTempFile("upload-", filename);
+            file.transferTo(tempFile); // Needed for jaudiotagger
+            AudioFile audioFile = AudioFileIO.read(tempFile);
             tag = audioFile.getTag();
             header = audioFile.getAudioHeader();
             artwork = (tag != null) ? tag.getFirstArtwork() : null;
+            tempFile.delete(); // cleanup
         } catch (Exception e) {
             System.out.println("Warning: Unable to read metadata: " + e.getMessage());
         }
 
-        // Build FileInfo object
+
+        // ✅ Build FileInfo object
         FileInfo fileInfo = new FileInfo();
         fileInfo.setFilename(filename);
-        fileInfo.setPath(filePath.toAbsolutePath().toString());
+        fileInfo.setPath(fileUrl); // ✅ S3 URL instead of local path
         fileInfo.setUploadedAt(LocalDateTime.now());
-
+        fileInfo.setFolderId(Long.parseLong(folderId));
+        fileInfo.setUserId(userId);
         Map<String, Object> metadata = new HashMap<>();
+
 
         if (tag != null) {
             fileInfo.setTitle(tag.getFirst(FieldKey.TITLE));
@@ -131,10 +158,8 @@ public class FileService {
                 System.out.println("Warning: Unable to extract artwork: " + e.getMessage());
             }
         }
-
         fileInfo.setMetadata(metadata); // Save as JSON in DB
-        fileInfo.setUserId(userId); // ✅ now correctly tied to the current user
-
+        fileInfo.setUserId(userId); // now correctly tied to the current user
         return fileRepository.save(fileInfo);
     }
 
@@ -154,11 +179,69 @@ public class FileService {
     }
 
 
+    public List<FileInfo> favoriteFiles() {
+        String userId = getCurrentUserId();
+        return fileRepository.findByUserIdAndIsLikedTrue(userId);
+    }
+
+
     public Resource getFile(String filename) throws MalformedURLException {
         String userId = getCurrentUserId();
-        Path userDir = Paths.get(uploadDir, userId);
-        Path path = userDir.resolve(filename);
-        return new UrlResource(path.toUri());
+        System.out.println("File name " + filename);
+        // ✅ Build the S3 key (same as when uploading)
+        String s3Key = userId + "/musics/" + filename;
+
+        // ✅ Download object as InputStream
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(s3Key)
+                .build();
+
+        // Return as Spring Resource
+        return new InputStreamResource(s3Client.getObject(getObjectRequest));
     }
+
+
+    public FileInfo addLike(Long id, Boolean like) {
+        FileInfo fileInfo = fileRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Music not found"));
+
+        fileInfo.setUserId(getCurrentUserId());
+        fileInfo.setLiked(like);
+
+        return fileRepository.save(fileInfo);
+    }
+    public void deleteFile(Long id) {
+        String userId = getCurrentUserId();
+
+        FileInfo fileInfo = fileRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("File not found"));
+
+        // Ensure the file belongs to the logged-in user
+        if (!fileInfo.getUserId().equals(userId)) {
+            throw new SecurityException("You are not allowed to delete this file");
+        }
+
+        String s3Key = userId + "/musics/" + fileInfo.getFilename();
+        // Delete from S3
+        try (S3Client s3 = S3Client.builder()
+                .region(Region.AP_SOUTHEAST_1)
+                .build()){
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(s3Key) // key = file path inside bucket
+                    .build();
+
+            s3.deleteObject(deleteObjectRequest);
+            System.out.println("File deleted from S3: " + s3Key);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete file from S3: " + e.getMessage(), e);
+        }
+
+        // Delete from DB
+        fileRepository.delete(fileInfo);
+    }
+
 }
+
 

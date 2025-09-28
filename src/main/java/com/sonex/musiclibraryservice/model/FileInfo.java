@@ -46,10 +46,11 @@ public class FileInfo {
     @Column(name = "folder_id")
     private Long folderId;
 
+    @Column(name = "is_liked")
+    private boolean isLiked;
+
     @Column(name="metadata", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> metadata;
-
-
 }
 

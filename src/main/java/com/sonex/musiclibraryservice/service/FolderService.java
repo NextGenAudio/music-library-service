@@ -8,9 +8,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import net.coobird.thumbnailator.Thumbnails;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,6 +25,10 @@ public class FolderService {
 
     @Autowired
     private FolderRepository folderRepository;
+
+    @Autowired
+    private S3Client s3Client;
+    private final String bucketName = "sonex2";
 
     private String getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -37,32 +44,43 @@ public class FolderService {
         folder.setName(name);
         folder.setUserId(this.getCurrentUserId());
         folder.setDescription(description);
-        folder.setMusicCount(0); // new folder starts empty
+        folder.setMusicCount(0);
         folder.setCreatedAt(LocalDateTime.now());
 
         if (artwork != null && !artwork.isEmpty()) {
             String userId = getCurrentUserId();
 
             try {
-                String uploadDir = "E:/Sonex/Software Development/photos/uploads";
-                String relativePath = "uploads/" + userId + "/";
-
-                Path userDir = Paths.get(uploadDir, userId);
-
-                Files.createDirectories(userDir); // ✅ ensure per-user folder exists
-
-                // ✅ unique filename to prevent overwrites
                 String uniqueFileName = System.currentTimeMillis() + "_" + artwork.getOriginalFilename();
-                System.out.println("Original file: " + uniqueFileName);
+                String s3Key = userId + "/images/" + uniqueFileName;
 
-                Path filePath = userDir.resolve(uniqueFileName);
-                System.out.println("Saving to: " + filePath.toAbsolutePath());
-                artwork.transferTo(filePath.toFile());
+                // ✅ Compress image in-memory
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                Thumbnails.of(artwork.getInputStream())
+                        .size(800, 800)       // resize (max 800px)
+                        .outputQuality(0.7)   // reduce quality for smaller file
+                        .toOutputStream(outputStream);
 
-                // ✅ Save relative path (or absolute if needed)
-                folder.setFolderArt(relativePath + uniqueFileName);
+                byte[] compressedBytes = outputStream.toByteArray();
+
+                // ✅ Upload compressed file to S3 (make public)
+                try (InputStream inputStream = new ByteArrayInputStream(compressedBytes)) {
+                    s3Client.putObject(
+                            PutObjectRequest.builder()
+                                    .bucket(bucketName)
+                                    .key(s3Key)
+                                    .contentType(artwork.getContentType())
+                                    .build(),
+                            RequestBody.fromInputStream(inputStream, compressedBytes.length)
+                    );
+                }
+
+                // ✅ Store full public URL in DB
+                String publicUrl = "https://" + bucketName + ".s3.amazonaws.com/" + s3Key;
+                folder.setFolderArt(publicUrl);
+
             } catch (IOException e) {
-                throw new RuntimeException("Failed to save artwork file", e);
+                throw new RuntimeException("Failed to upload artwork to S3", e);
             }
         }
 
@@ -72,7 +90,8 @@ public class FolderService {
 
 
     public List<Folder> getAllFolders() {
-        return folderRepository.findAll();
+        String userId = getCurrentUserId();
+        return folderRepository.findByUserId(userId);
     }
 
     public Folder getFolderById(Long id) {

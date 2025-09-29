@@ -24,8 +24,8 @@ public class SecurityConfig {
                 .cors(withDefaults())              // picks up CorsConfig bean
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // allow preflight
-                        .requestMatchers("/public/**", "/health").permitAll()
-                        .requestMatchers("/files/**").authenticated()
+                        .requestMatchers("/public/**", "/health","/files/**").permitAll()
+//                        .requestMatchers("/files/**").authenticated()
                         .anyRequest().permitAll()
                 )
                 // insert our NextAuthSessionFilter BEFORE username/password filter

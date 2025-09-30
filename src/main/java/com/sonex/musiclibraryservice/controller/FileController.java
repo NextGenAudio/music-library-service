@@ -1,6 +1,8 @@
 package com.sonex.musiclibraryservice.controller;
 
 import com.sonex.musiclibraryservice.service.FolderService;
+import com.sonex.musiclibraryservice.Kafka.PlaylistMoodProducer;
+import com.sonex.musiclibraryservice.model.AudioUploadEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import com.sonex.musiclibraryservice.model.FileInfo;
@@ -22,11 +24,11 @@ import com.sonex.musiclibraryservice.service.FileService;
 public class FileController {
 
     private final FileService fileService;
-
+    private final PlaylistMoodProducer playlistMoodProducer;
     @Autowired
-    public FileController(FileService fileService) {
+    public FileController(FileService fileService, PlaylistMoodProducer playlistMoodProducer) {
         this.fileService = fileService;
-
+        this.playlistMoodProducer = playlistMoodProducer;
     }
 
     @PostMapping("/upload")
@@ -41,10 +43,18 @@ public class FileController {
         }
     }
 
+    @GetMapping("/uploadfile")
+    public String uploadFile(){
+        AudioUploadEvent newEvent= new AudioUploadEvent("123","D:\\Projects\\Sonex\\music-classifier-service\\music-classifier-service\\sampletracks\\sample.mp3");
+        playlistMoodProducer.publishAudioUploaded(newEvent);
+        return "hrii";
+    }
+
     @GetMapping("/list")
     public ResponseEntity<List<FileInfo>> listFiles(@RequestParam(required = false) Long folderId) {
         return ResponseEntity.ok(fileService.listFiles(folderId));
     }
+
 
     @GetMapping("/download/{filename}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String filename) {

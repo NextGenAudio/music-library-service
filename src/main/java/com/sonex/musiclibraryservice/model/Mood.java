@@ -12,7 +12,7 @@ public class Mood {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private String id;
+    private Long id;
 
     @Column(name = "mood")
     private String mood;
@@ -20,4 +20,3 @@ public class Mood {
     @Column(name = "description")
     private String description;
 }
-

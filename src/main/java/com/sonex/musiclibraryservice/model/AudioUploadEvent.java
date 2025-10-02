@@ -1,6 +1,6 @@
 package com.sonex.musiclibraryservice.model;
 
 public record AudioUploadEvent(
-        String fileId,
+        Long fileId,
         String storageUrl
 ) {}

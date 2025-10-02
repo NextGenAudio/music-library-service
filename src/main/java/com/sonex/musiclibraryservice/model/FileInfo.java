@@ -5,8 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import java.util.Map;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -49,14 +47,15 @@ public class FileInfo {
     @Column(name = "is_liked")
     private boolean isLiked;
 
-    @Column(name = "genre_id")
-    private Long genreId;
+    @ManyToOne
+    @JoinColumn(name = "genre_id")
+    private Genre genre;
 
-    @Column(name = "mood_id")
-    private Long moodId;
+    @ManyToOne
+    @JoinColumn(name = "mood_id")
+    private Mood mood;
 
     @Column(name="metadata", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> metadata;
 }
-

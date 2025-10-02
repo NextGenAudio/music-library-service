@@ -1,27 +1,19 @@
 package com.sonex.musiclibraryservice.model;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class MoodListnerEvent {
     private String mood;
-    private String fileId;
+    private Long fileId;
 
-    public MoodListnerEvent(String mood, String fileId) {
+    public MoodListnerEvent() {
+    }
+
+    public MoodListnerEvent(String mood, Long fileId) {
         this.mood = mood;
-        this.fileId = fileId;
-    }
-
-    public String getMood() {
-        return mood;
-    }
-
-    public void setMood(String mood) {
-        this.mood = mood;
-    }
-
-    public String getFileId() {
-        return fileId;
-    }
-
-    public void setFileId(String fileId) {
         this.fileId = fileId;
     }
 }

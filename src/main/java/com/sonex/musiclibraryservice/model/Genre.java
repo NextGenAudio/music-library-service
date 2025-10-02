@@ -12,10 +12,10 @@ public class Genre {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private String id;
+    private Long id;
 
     @Column(name = "genre")
-    private String genre;
+    private String genreName;
 
     @Column(name = "description")
     private String description;

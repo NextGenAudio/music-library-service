@@ -1,6 +1,8 @@
 package com.sonex.musiclibraryservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sonex.musiclibraryservice.Kafka.PlaylistMoodProducer;
+import com.sonex.musiclibraryservice.model.AudioUploadEvent;
 import com.sonex.musiclibraryservice.model.Folder;
 import com.sonex.musiclibraryservice.repository.FolderRepository;
 import org.jaudiotagger.audio.AudioHeader;
@@ -52,17 +54,18 @@ import javax.crypto.spec.SecretKeySpec;
 public class FileService {
 
     private final FileRepository fileRepository;
-    @Autowired
-    private FolderRepository folderRepository;
 
     @Autowired
     private S3Client s3Client;
     private final String bucketName = "sonex2";
 
     Artwork artwork = null;
+
     public FileService(FileRepository fileRepository ) {
         this.fileRepository = fileRepository;
+
     }
+
     private String getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
@@ -118,7 +121,7 @@ public class FileService {
         // ✅ Build FileInfo object
         FileInfo fileInfo = new FileInfo();
         fileInfo.setFilename(filename);
-        fileInfo.setPath(fileUrl); // ✅ S3 URL instead of local path
+        fileInfo.setPath(fileUrl); // ✅ S3 URL
         fileInfo.setUploadedAt(LocalDateTime.now());
         fileInfo.setFolderId(Long.parseLong(folderId));
         fileInfo.setUserId(userId);
@@ -160,6 +163,9 @@ public class FileService {
         }
         fileInfo.setMetadata(metadata); // Save as JSON in DB
         fileInfo.setUserId(userId); // now correctly tied to the current user
+
+
+
         return fileRepository.save(fileInfo);
     }
 

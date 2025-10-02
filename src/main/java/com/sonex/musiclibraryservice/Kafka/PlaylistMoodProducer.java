@@ -15,26 +15,25 @@ public class PlaylistMoodProducer {
     private static final Logger LOGGER= LoggerFactory.getLogger("producer for get mood");
 
     private final ObjectMapper objectMapper;
-    private final KafkaTemplate <String,String> kafkaTemplate;
+    private final KafkaTemplate <String,Object> kafkaTemplate;
 
-    public PlaylistMoodProducer(ObjectMapper objectMapper, KafkaTemplate<String, String> kafkaTemplate) {
+    public PlaylistMoodProducer(ObjectMapper objectMapper, KafkaTemplate<String, Object> kafkaTemplate) {
         this.objectMapper = objectMapper;
         this.kafkaTemplate = kafkaTemplate;
     }
 
     public void publishAudioUploaded(AudioUploadEvent event) {
         try {
-            String payload = objectMapper.writeValueAsString(event);
-
-            Message<String> message = MessageBuilder.withPayload(payload)
+            Message<AudioUploadEvent> message = MessageBuilder.withPayload(event)
                     .setHeader(KafkaHeaders.TOPIC, "audio.uploaded")
                     .setHeader(KafkaHeaders.KEY, String.valueOf(event.fileId()))
                     .build();
 
             kafkaTemplate.send(message);
-            LOGGER.info(String.format("Sending order event to topic %s",message.toString()));
+            LOGGER.info("Sending audio upload event to topic audio.uploaded: {}", event);
 
         } catch (Exception e) {
+            LOGGER.error("Failed to send message", e);
             throw new RuntimeException("Failed to send message", e);
         }
     }

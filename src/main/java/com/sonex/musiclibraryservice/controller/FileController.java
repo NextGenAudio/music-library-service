@@ -84,6 +84,42 @@ public class FileController {
         return ResponseEntity.ok(updatedFile);
     }
 
+    @PostMapping("/{id}/score")
+    public ResponseEntity<FileInfo> updateScore(
+            @PathVariable Long id,
+            @RequestParam("score") float score) {
+
+        FileInfo updatedFile = fileService.updateScore(id, score);
+        if (updatedFile == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(updatedFile);
+    }
+
+    @PostMapping("/{id}/listen_count")
+    public ResponseEntity<FileInfo> updateListenCount(
+            @PathVariable Long id,
+            @RequestParam("count") Long listenCount) {
+
+        FileInfo updatedFile = fileService.updateListenCount(id, listenCount);
+        if (updatedFile == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(updatedFile);
+    }
+
+
+    @PostMapping("/{id}/listen")
+    public ResponseEntity<FileInfo> updateLastListenTime(
+            @PathVariable Long id) {
+
+        FileInfo updatedFile = fileService.updateLastListenTime(id);
+        if (updatedFile == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(updatedFile);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFile(@PathVariable Long id) {
         fileService.deleteFile(id);
@@ -93,6 +129,11 @@ public class FileController {
     @GetMapping("/favorite")
     public ResponseEntity<List<FileInfo>> favoriteFiles() {
         return ResponseEntity.ok(fileService.favoriteFiles());
+    }
+
+    @GetMapping("/recent")
+    public ResponseEntity<List<FileInfo>> recentFiles() {
+        return ResponseEntity.ok(fileService.recentFiles());
     }
 
 }

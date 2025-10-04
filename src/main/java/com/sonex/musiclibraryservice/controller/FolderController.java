@@ -49,8 +49,12 @@ public class FolderController {
 
     // Delete
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteFolder(@PathVariable Long id) {
-        return folderService.deleteFolder(id) ? ResponseEntity.noContent().build()
-                : ResponseEntity.notFound().build();
+    public ResponseEntity<String> deleteFolder(@PathVariable Long id) {
+        try{
+            folderService.deleteFolder(id);
+            return ResponseEntity.ok("Folder deleted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

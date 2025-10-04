@@ -10,6 +10,8 @@ import org.jaudiotagger.tag.images.Artwork;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -190,6 +192,11 @@ public class FileService {
         return fileRepository.findByUserIdAndIsLikedTrue(userId);
     }
 
+    public List<FileInfo> recentFiles() {
+        String userId = getCurrentUserId();
+        return fileRepository.findTop10ByUserIdOrderByLastListenedAtAsc(userId);
+    }
+
 
     public Resource getFile(String filename) throws MalformedURLException {
         String userId = getCurrentUserId();
@@ -215,6 +222,34 @@ public class FileService {
         fileInfo.setUserId(getCurrentUserId());
         fileInfo.setLiked(like);
 
+        return fileRepository.save(fileInfo);
+    }
+
+    public FileInfo updateScore(Long id, float score) {
+        FileInfo fileInfo = fileRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Music not found"));
+
+        fileInfo.setUserId(getCurrentUserId());
+        fileInfo.setXScore(score);
+
+        return fileRepository.save(fileInfo);
+    }
+
+    public FileInfo updateListenCount(Long id, Long listenCount) {
+        FileInfo fileInfo = fileRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Music not found"));
+
+        fileInfo.setUserId(getCurrentUserId());
+        fileInfo.setListenCount(listenCount);
+
+        return fileRepository.save(fileInfo);
+    }
+
+    public FileInfo updateLastListenTime(Long id) {
+        FileInfo fileInfo = fileRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Music not found"));
+
+        fileInfo.setLastListenedAt(LocalDateTime.now());
         return fileRepository.save(fileInfo);
     }
     public void deleteFile(Long id) {
@@ -249,5 +284,3 @@ public class FileService {
     }
 
 }
-
-

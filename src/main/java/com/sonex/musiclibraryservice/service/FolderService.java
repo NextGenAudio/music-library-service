@@ -107,12 +107,12 @@ public class FolderService {
                 .orElse(null);
     }
 
-    public boolean deleteFolder(Long id) {
-        return folderRepository.findById(id)
-                .map(folder -> {
-                    folderRepository.delete(folder);
-                    return true;
-                })
-                .orElse(false);
+    public void deleteFolder(Long id) {
+        Folder folder = folderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Folder not found with id " + id));
+        if(!folder.getUserId().equals(getCurrentUserId())) {
+            throw new SecurityException("Not authorized to delete this folder");
+        }
+        folderRepository.delete(folder);
     }
 }

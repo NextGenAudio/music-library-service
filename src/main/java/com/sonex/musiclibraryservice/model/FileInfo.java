@@ -47,6 +47,18 @@ public class FileInfo {
     @Column(name = "is_liked")
     private boolean isLiked;
 
+    @Column(name = "x_score")
+    private float xScore;
+
+    @Column(name = "y_score")
+    private float yScore;
+
+    @Column(name = "last_listened_at")
+    private LocalDateTime lastListenedAt;
+
+    @Column(name = "listen_count")
+    private Long listenCount;
+
     @ManyToOne
     @JoinColumn(name = "genre_id")
     private Genre genre;

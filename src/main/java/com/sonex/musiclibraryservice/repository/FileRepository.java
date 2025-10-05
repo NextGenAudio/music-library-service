@@ -11,13 +11,20 @@ import java.util.List;
 @Repository
 public interface FileRepository extends JpaRepository<FileInfo, Long> {
 
-
     List<FileInfo> findByUserId(String userId);
 
     List<FileInfo> findByUserIdAndFolderId(String userId, Long folderId);
 
     List<FileInfo> findByUserIdAndIsLikedTrue(String userId);
 
-    // Method to get exactly top 10 recent files
-    List<FileInfo> findTop10ByUserIdOrderByLastListenedAtAsc(String userId);
+    // Top 5 most recently listened files
+    @Query(value = "SELECT * FROM musics WHERE user_id = :userId ORDER BY last_listened_at DESC NULLS LAST LIMIT 5", nativeQuery = true)
+    List<FileInfo> findTop5ByUserIdOrderByLastListenedAtDesc(@Param("userId") String userId);
+
+    // Top songs by Y-Score threshold (e.g., top recommendations)
+    @Query("SELECT f FROM Musics f WHERE f.userId = :userId AND f.yScore > :yScoreThreshold ORDER BY f.yScore DESC")
+    List<FileInfo> findByUserIdAndYScoreGreaterThanOrderByYScoreDesc(@Param("userId") String userId, @Param("yScoreThreshold") float yScoreThreshold);
+
+    // Top 5 most listened songs
+    List<FileInfo> findTop5ByUserIdOrderByListenCountDesc(String userId);
 }

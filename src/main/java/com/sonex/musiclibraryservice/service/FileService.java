@@ -1,31 +1,20 @@
 package com.sonex.musiclibraryservice.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sonex.musiclibraryservice.Kafka.PlaylistMoodProducer;
-import com.sonex.musiclibraryservice.model.AudioUploadEvent;
-import com.sonex.musiclibraryservice.model.Folder;
-import com.sonex.musiclibraryservice.repository.FolderRepository;
 import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.tag.images.Artwork;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.core.io.UrlResource;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HashMap;
@@ -40,17 +29,12 @@ import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.FieldKey;
 
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-
-import javax.crypto.spec.SecretKeySpec;
 
 @Service
 public class FileService {
@@ -194,7 +178,7 @@ public class FileService {
 
     public List<FileInfo> recentFiles() {
         String userId = getCurrentUserId();
-        return fileRepository.findTop10ByUserIdOrderByLastListenedAtAsc(userId);
+        return fileRepository.findTop5ByUserIdOrderByLastListenedAtDesc(userId);
     }
 
 
@@ -219,7 +203,6 @@ public class FileService {
         FileInfo fileInfo = fileRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Music not found"));
 
-        fileInfo.setUserId(getCurrentUserId());
         fileInfo.setLiked(like);
 
         return fileRepository.save(fileInfo);
@@ -229,7 +212,6 @@ public class FileService {
         FileInfo fileInfo = fileRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Music not found"));
 
-        fileInfo.setUserId(getCurrentUserId());
         fileInfo.setXScore(score);
 
         return fileRepository.save(fileInfo);
@@ -239,19 +221,19 @@ public class FileService {
         FileInfo fileInfo = fileRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Music not found"));
 
-        fileInfo.setUserId(getCurrentUserId());
         fileInfo.setListenCount(listenCount);
 
         return fileRepository.save(fileInfo);
     }
 
-    public FileInfo updateLastListenTime(Long id) {
-        FileInfo fileInfo = fileRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Music not found"));
-
-        fileInfo.setLastListenedAt(LocalDateTime.now());
-        return fileRepository.save(fileInfo);
+    public List<FileInfo> trendingFiles() {
+        return fileRepository.findByUserIdAndYScoreGreaterThanOrderByYScoreDesc(getCurrentUserId(), 4);
     }
+
+    public List<FileInfo> mostListenedFiles() {
+        return fileRepository.findTop5ByUserIdOrderByListenCountDesc(getCurrentUserId());
+    }
+
     public void deleteFile(Long id) {
         String userId = getCurrentUserId();
 

@@ -109,15 +109,18 @@ public class FileController {
     }
 
 
-    @PostMapping("/{id}/listen")
-    public ResponseEntity<FileInfo> updateLastListenTime(
-            @PathVariable Long id) {
+    @GetMapping("/most-played")
+    public ResponseEntity<List<FileInfo>> getMostListenedFiles() {
 
-        FileInfo updatedFile = fileService.updateLastListenTime(id);
-        if (updatedFile == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(updatedFile);
+        List<FileInfo> mostPlayedMusics = fileService.mostListenedFiles();
+        return ResponseEntity.ok(mostPlayedMusics);
+    }
+
+    @GetMapping("/trending")
+    public ResponseEntity<List<FileInfo>> getTrendingFiles() {
+
+        List<FileInfo> trendingMusics = fileService.trendingFiles();
+        return ResponseEntity.ok(trendingMusics);
     }
 
     @DeleteMapping("/{id}")

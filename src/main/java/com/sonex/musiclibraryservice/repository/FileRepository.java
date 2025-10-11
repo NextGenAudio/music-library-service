@@ -1,5 +1,7 @@
 package com.sonex.musiclibraryservice.repository;
 
+import com.sonex.musiclibraryservice.dto.FileInfoBrief;
+import com.sonex.musiclibraryservice.dto.FileInfoMore;
 import com.sonex.musiclibraryservice.model.FileInfo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,11 +13,24 @@ import java.util.List;
 @Repository
 public interface FileRepository extends JpaRepository<FileInfo, Long> {
 
-    List<FileInfo> findByUserId(String userId);
+    @Query("SELECT new com.sonex.musiclibraryservice.dto.FileInfoBrief(" +
+            "f.id, f.filename, f.path, f.title, f.artist, f.album, f.metadata, " +
+            "CAST(f.listenCount as integer), f.isLiked) " +
+            "FROM Musics f " +
+            "WHERE f.userId = :userId")
+    List<FileInfoBrief> findByUserId(@Param("userId") String userId);
 
-    List<FileInfo> findByUserIdAndFolderId(String userId, Long folderId);
+    @Query("SELECT new com.sonex.musiclibraryservice.dto.FileInfoBrief(" +
+            "f.id, f.filename, f.path, f.title, f.artist, f.album, f.metadata, " +
+            "CAST(f.listenCount as integer), f.isLiked) " +
+            "FROM Musics f " +
+            "WHERE f.userId = :userId AND f.folderId = :folderId")
+    List<FileInfoBrief> findByUserIdAndFolderId(@Param("userId") String userId, @Param("folderId") Long folderId);
 
-    List<FileInfo> findByUserIdAndIsLikedTrue(String userId);
+
+
+    @Query(value = "SELECT * FROM musics WHERE user_id = :userId AND is_liked = true", nativeQuery = true)
+    List<FileInfo> findByUserIdAndIsLikedTrue(@Param("userId") String userId);
 
     // Top 5 most recently listened files
     @Query(value = "SELECT * FROM musics WHERE user_id = :userId ORDER BY last_listened_at DESC NULLS LAST LIMIT 5", nativeQuery = true)
@@ -45,5 +60,12 @@ public interface FileRepository extends JpaRepository<FileInfo, Long> {
                                       @Param("currentMood") String currentMood,
                                       @Param("currentArtist") String currentArtist);
 
+    @Query(value = "SELECT m.id, g.genre, mo.mood, " +
+            "TO_CHAR(m.uploaded_at, 'YYYY-MM-DD HH24:MI:SS') " +
+            "FROM musics m " +
+            "LEFT JOIN genres g ON m.genre_id = g.id " +
+            "LEFT JOIN moods mo ON m.mood_id = mo.id " +
+            "WHERE m.id = :id", nativeQuery = true)
+    FileInfoMore findFileInfoMoreById(@Param("id") Long id);
 
 }

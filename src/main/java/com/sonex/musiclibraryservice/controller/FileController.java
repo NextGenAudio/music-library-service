@@ -1,5 +1,7 @@
 package com.sonex.musiclibraryservice.controller;
 
+import com.sonex.musiclibraryservice.dto.FileInfoBrief;
+import com.sonex.musiclibraryservice.dto.FileInfoMore;
 import com.sonex.musiclibraryservice.service.FolderService;
 import com.sonex.musiclibraryservice.Kafka.PlaylistMoodProducer;
 import com.sonex.musiclibraryservice.model.AudioUploadEvent;
@@ -53,9 +55,22 @@ public class FileController {
         }
     }
 
+    @GetMapping("music/{id}")
+    public ResponseEntity<FileInfoMore> getMusicById(@PathVariable Long id) {
+        try {
+            FileInfoMore music = fileService.getMusicDetails(id);
+            return ResponseEntity.ok(music);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(401).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
 
     @GetMapping("/list")
-    public ResponseEntity<List<FileInfo>> listFiles(@RequestParam(required = false) Long folderId) {
+    public ResponseEntity<List<FileInfoBrief>> listFiles(@RequestParam(required = false) Long folderId) {
         return ResponseEntity.ok(fileService.listFiles(folderId));
     }
 

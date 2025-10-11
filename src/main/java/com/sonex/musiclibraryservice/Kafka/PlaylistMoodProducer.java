@@ -30,7 +30,7 @@ public class PlaylistMoodProducer {
                     .build();
 
             kafkaTemplate.send(message);
-            LOGGER.info("Sending audio upload event to topic audio.uploaded: {}", event);
+            LOGGER.info("Sending audio upload event to topic audio.uploaded.mood: {}", event);
 
         } catch (Exception e) {
             LOGGER.error("Failed to send message", e);

@@ -1,5 +1,7 @@
 package com.sonex.musiclibraryservice.service;
 
+import com.sonex.musiclibraryservice.dto.FileInfoBrief;
+import com.sonex.musiclibraryservice.dto.FileInfoMore;
 import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.tag.images.Artwork;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -158,7 +160,7 @@ public class FileService {
 
 
 
-    public List<FileInfo> listFiles(Long folderId) {
+    public List<FileInfoBrief> listFiles(Long folderId) {
         String userId = getCurrentUserId();
 
         if (folderId != null) {
@@ -179,6 +181,16 @@ public class FileService {
     public List<FileInfo> recentFiles() {
         String userId = getCurrentUserId();
         return fileRepository.findTop5ByUserIdOrderByLastListenedAtDesc(userId);
+    }
+
+    public FileInfoMore getMusicDetails(Long id) {
+        String userId =  getCurrentUserId();
+        FileInfoMore fileInfoMore = fileRepository.findFileInfoMoreById(id);
+        // Ensure the file belongs to the logged-in user
+//        if (!fileInfoMore.getUserId().equals(userId)) {
+//            throw new SecurityException("You are not allowed to view this file");
+//        }
+        return fileInfoMore;
     }
 
 

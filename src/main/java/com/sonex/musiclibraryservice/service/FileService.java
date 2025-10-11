@@ -265,4 +265,9 @@ public class FileService {
         fileRepository.delete(fileInfo);
     }
 
+    public List<FileInfo> getRecommendations(String genre,String mood,String artist){
+        String userId = getCurrentUserId();
+        return fileRepository.getRecommendations(userId, genre, mood, artist);
+    }
+
 }

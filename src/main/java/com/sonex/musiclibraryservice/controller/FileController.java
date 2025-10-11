@@ -3,6 +3,7 @@ package com.sonex.musiclibraryservice.controller;
 import com.sonex.musiclibraryservice.service.FolderService;
 import com.sonex.musiclibraryservice.Kafka.PlaylistMoodProducer;
 import com.sonex.musiclibraryservice.model.AudioUploadEvent;
+import com.sonex.musiclibraryservice.service.GenreClassifierService;
 import com.sonex.musiclibraryservice.service.MoodClassifierService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -26,10 +27,13 @@ public class FileController {
 
     private final FileService fileService;
     private final MoodClassifierService moodClassifierService;
+    private final GenreClassifierService genreClassifierService;
+
     @Autowired
-    public FileController(FileService fileService , MoodClassifierService moodClassifierService) {
+    public FileController(FileService fileService , MoodClassifierService moodClassifierService, GenreClassifierService genreClassifierService) {
         this.fileService = fileService;
         this.moodClassifierService =  moodClassifierService;
+        this.genreClassifierService = genreClassifierService;
 
     }
 
@@ -41,6 +45,8 @@ public class FileController {
             FileInfo savedFile = fileService.saveFile(file, folderId);
             // Call mood classification service
             moodClassifierService.sendAudioUploadEvent(savedFile);
+            genreClassifierService.sendAudioUploadEvent(savedFile);
+
             return ResponseEntity.ok(savedFile);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -139,4 +145,12 @@ public class FileController {
         return ResponseEntity.ok(fileService.recentFiles());
     }
 
+    @GetMapping("/recommendations")
+    public ResponseEntity<List<FileInfo>> getRecommendations(
+            @RequestParam(value = "genre", required = false) String genre,
+            @RequestParam(value = "mood", required = false) String mood,
+            @RequestParam(value = "artist", required = false) String artist){
+        List<FileInfo> recommendations = fileService.getRecommendations(genre, mood, artist);
+        return ResponseEntity.ok(recommendations);
+    }
 }

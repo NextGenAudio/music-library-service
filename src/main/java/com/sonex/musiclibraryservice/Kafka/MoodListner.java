@@ -25,7 +25,7 @@ public class MoodListner {
         this.fileRepository = fileRepository;
     }
     @KafkaListener(
-            topics = "audio.processed",
+            topics = "mood.processed",
             groupId = "music-mood-classifier"
     )
     public void consume(MoodListnerEvent message) {

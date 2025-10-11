@@ -11,13 +11,13 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 
 @Service
-public class PlaylistMoodProducer {
-    private static final Logger LOGGER= LoggerFactory.getLogger("producer for get mood");
+public class PlaylistGenreProducer {
+    private static final Logger LOGGER = LoggerFactory.getLogger("producer for get genre");
 
     private final ObjectMapper objectMapper;
-    private final KafkaTemplate <String,Object> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public PlaylistMoodProducer(ObjectMapper objectMapper, KafkaTemplate<String, Object> kafkaTemplate) {
+    public PlaylistGenreProducer(ObjectMapper objectMapper, KafkaTemplate<String, Object> kafkaTemplate) {
         this.objectMapper = objectMapper;
         this.kafkaTemplate = kafkaTemplate;
     }
@@ -25,12 +25,12 @@ public class PlaylistMoodProducer {
     public void publishAudioUploaded(AudioUploadEvent event) {
         try {
             Message<AudioUploadEvent> message = MessageBuilder.withPayload(event)
-                    .setHeader(KafkaHeaders.TOPIC, "audio.uploaded.mood")
+                    .setHeader(KafkaHeaders.TOPIC, "audio.uploaded.genre")
                     .setHeader(KafkaHeaders.KEY, String.valueOf(event.fileId()))
                     .build();
 
             kafkaTemplate.send(message);
-            LOGGER.info("Sending audio upload event to topic audio.uploaded: {}", event);
+            LOGGER.info("Sending audio upload event to topic audio.uploaded.genre: {}", event);
 
         } catch (Exception e) {
             LOGGER.error("Failed to send message", e);

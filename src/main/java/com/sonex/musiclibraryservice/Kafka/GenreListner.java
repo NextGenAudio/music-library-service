@@ -26,25 +26,39 @@ public class GenreListner {
     }
 
     @KafkaListener(
-            topics = "genre.processed",
-            groupId = "music-genre-classifier"
+            topics = "audio.processed.genre",
+            groupId = "music-genre-classifier",
+            containerFactory = "genreKafkaListenerContainerFactory"
     )
     public void consume(GenreListnerEvent message) {
-        LOGGER.info("Retrieved the genre event: fileId={}, genre={}", message.getFileId(), message.getGenre());
+        try {
+            LOGGER.info("Retrieved the genre event: fileId={}, genre={}", message.getFileId(), message.getGenre());
 
-//        // 1. Find genre by name
-//        Genre genre = genreRepository.findByGenreName(message.getGenre());
-//        if (genre == null) {
-//            throw new RuntimeException("Genre not found: " + message.getGenre());
-//        }
-//
-//        // 2. Find file and set genre
-//        FileInfo fileInfo = fileRepository.findById(message.getFileId())
-//                .orElseThrow(() -> new RuntimeException("File not found"));
-//
-//        fileInfo.setGenre(genre);
-//
-//        // 3. Save file
-//        fileRepository.save(fileInfo);
+            // 1. Find or create genre
+            Genre genre = genreRepository.findByGenre(message.getGenre());
+            if (genre == null) {
+                LOGGER.info("Genre '{}' not found, creating new genre", message.getGenre());
+                genre = new Genre();
+                genre.setGenre(message.getGenre());
+                genre.setDescription("Auto-generated genre from classification");
+                genre = genreRepository.save(genre);
+                LOGGER.info("Created new genre: {}", genre.getGenre());
+            }
+
+            // 2. Find file and set genre
+            FileInfo fileInfo = fileRepository.findById(message.getFileId())
+                    .orElseThrow(() -> new RuntimeException("File not found with ID: " + message.getFileId()));
+
+            fileInfo.setGenre(genre);
+
+            // 3. Save file
+            fileRepository.save(fileInfo);
+
+            LOGGER.info("Successfully updated file {} with genre {}", message.getFileId(), message.getGenre());
+
+        } catch (Exception e) {
+            LOGGER.error("Error processing genre event for fileId={}, genre={}: {}",
+                    message.getFileId(), message.getGenre(), e.getMessage(), e);
+        }
     }
 }

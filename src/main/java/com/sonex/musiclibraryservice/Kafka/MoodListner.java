@@ -25,27 +25,40 @@ public class MoodListner {
         this.fileRepository = fileRepository;
     }
     @KafkaListener(
-            topics = "mood.processed",
-            groupId = "music-mood-classifier"
+            topics = "audio.processed.mood",
+            groupId = "music-mood-classifier",
+            containerFactory = "moodKafkaListenerContainerFactory"
     )
     public void consume(MoodListnerEvent message) {
+        try {
+            LOGGER.info("Retrieved the mood event: fileId={}, mood={}", message.getFileId(), message.getMood());
 
+            // 1. Find or create mood
+            Mood mood = moodRepository.findByMood(message.getMood()).orElse(null);
+            if (mood == null) {
+                LOGGER.info("Mood '{}' not found, creating new mood", message.getMood());
+                mood = new Mood();
+                mood.setMood(message.getMood());
+                mood.setDescription("Auto-generated mood from classification");
+                mood = moodRepository.save(mood);
+                LOGGER.info("Created new mood: {}", mood.getMood());
+            }
 
-        LOGGER.info("Retrieved the mood event: fileId={}, mood={}", message.getFileId(), message.getMood());
-        // Add your business logic here to handle the mood classification result
+            // 2. Find file and set mood
+            FileInfo fileInfo = fileRepository.findById(message.getFileId())
+                    .orElseThrow(() -> new RuntimeException("File not found with ID: " + message.getFileId()));
 
-        // 1. Find mood by name
-        Mood mood = moodRepository.findByMood(message.getMood())
-                .orElseThrow(() -> new RuntimeException("Mood not found: " + message.getMood()));
+            fileInfo.setMood(mood);
 
-        // 2. Create new music and set mood
-        FileInfo fileInfo = fileRepository.findById(message.getFileId())
-                .orElseThrow(() -> new RuntimeException("Music not found"));
+            // 3. Save file
+            fileRepository.save(fileInfo);
 
-        fileInfo.setMood(mood);
+            LOGGER.info("Successfully updated file {} with mood {}", message.getFileId(), message.getMood());
 
-        // 3. Save music
-        fileRepository.save(fileInfo);
-
+        } catch (Exception e) {
+            LOGGER.error("Error processing mood event for fileId={}, mood={}: {}",
+                    message.getFileId(), message.getMood(), e.getMessage(), e);
+            // Don't rethrow - this will prevent infinite retries
+        }
     }
 }

@@ -75,21 +75,38 @@ public class FileController {
     }
 
 
-    @GetMapping("/download/{filename}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String filename) {
+    @GetMapping("/download/{id}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long id) {
         try {
-            Resource resource = fileService.getFile( filename);
+            Resource resource = fileService.getFile(id);
+            final String filename = resource.getFilename();
 
-            String contentType = "audio/mpeg"; // or detect based on extension (.mp3, .wav, etc.)
-
+            String contentType = getContentType(filename);
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
-                    .header(HttpHeaders.ACCEPT_RANGES, "bytes") // ✅ enable seeking
+                    .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
                     .contentType(MediaType.parseMediaType(contentType))
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);
-        } catch (MalformedURLException e) {
+        }
+        catch (Exception e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    // ✅ Helper method to determine content type
+    private String getContentType(String filename) {
+        if (filename == null) return "audio/mpeg";
+
+        String extension = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
+        switch (extension) {
+            case "mp3": return "audio/mpeg";
+            case "wav": return "audio/wav";
+            case "ogg": return "audio/ogg";
+            case "m4a": return "audio/mp4";
+            case "aac": return "audio/aac";
+            case "flac": return "audio/flac";
+            default: return "audio/mpeg";
         }
     }
 

@@ -194,9 +194,14 @@ public class FileService {
     }
 
 
-    public Resource getFile(String filename) throws MalformedURLException {
-        String userId = getCurrentUserId();
+    public Resource getFile(Long fileId) throws MalformedURLException {
+        FileInfo fileInfo = fileRepository.findById(fileId)
+                .orElseThrow(() -> new IllegalArgumentException("File not found with id: " + fileId));
+
+        String filename = fileInfo.getFilename();
+        String userId = fileInfo.getUserId();
         System.out.println("File name " + filename);
+
         // ✅ Build the S3 key (same as when uploading)
         String s3Key = userId + "/musics/" + filename;
 

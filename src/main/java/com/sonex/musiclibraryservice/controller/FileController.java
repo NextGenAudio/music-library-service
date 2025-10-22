@@ -167,6 +167,7 @@ public class FileController {
         return ResponseEntity.noContent().build();
     }
 
+
     @GetMapping("/favorite")
     public ResponseEntity<List<FileInfo>> favoriteFiles() {
         return ResponseEntity.ok(fileService.favoriteFiles());
@@ -184,5 +185,10 @@ public class FileController {
             @RequestParam(value = "artist", required = false) String artist){
         List<FileInfo> recommendations = fileService.getRecommendations(genre, mood, artist);
         return ResponseEntity.ok(recommendations);
+    }
+
+    @GetMapping("/count")
+    public Long countFiles() {
+        return fileService.countFiles();
     }
 }

@@ -287,4 +287,8 @@ public class FileService {
         return fileRepository.getRecommendations(userId, genre, mood, artist);
     }
 
+    public Long countFiles() {
+        return fileRepository.count();
+    }
+
 }

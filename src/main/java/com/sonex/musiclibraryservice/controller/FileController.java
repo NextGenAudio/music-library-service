@@ -39,6 +39,20 @@ public class FileController {
 
     }
 
+    @GetMapping("/test")
+    public String testEndpoint() {
+        FileInfo fileInfo=new FileInfo();
+        fileInfo.setId(1l);
+        fileInfo.setPath("D:\\Projects\\Sonex\\music-classifier-services\\genre-classifier-service\\sampletracks\\sample2.mp3");
+        try{
+            moodClassifierService.sendAudioUploadEvent(fileInfo);
+//            genreClassifierService.sendAudioUploadEvent(fileInfo);
+        }catch (Exception e){
+            return "Error: " + e.getMessage();
+        }
+        return "FileController is working!";
+    }
+
     @PostMapping("/upload")
     public ResponseEntity<FileInfo> uploadFile(@RequestParam("file") MultipartFile file,
                                                @RequestParam(value = "folderId") String folderId) {

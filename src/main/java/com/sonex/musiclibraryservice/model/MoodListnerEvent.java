@@ -16,4 +16,20 @@ public class MoodListnerEvent {
         this.mood = mood;
         this.fileId = fileId;
     }
+
+    public String getMood() {
+        return mood;
+    }
+
+    public void setMood(String mood) {
+        this.mood = mood;
+    }
+
+    public Long getFileId() {
+        return fileId;
+    }
+
+    public void setFileId(Long fileId) {
+        this.fileId = fileId;
+    }
 }

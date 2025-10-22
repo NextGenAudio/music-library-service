@@ -24,7 +24,7 @@ public class KafkaConsumerConfig {
     @Bean("genreConsumerFactory")
     public ConsumerFactory<String, GenreListnerEvent> genreConsumerFactory() {
         Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "boot-ctavlxrz.c2.kafka-serverless.us-east-1.amazonaws.com:9098");
         configProps.put(ConsumerConfig.GROUP_ID_CONFIG, "music-genre-classifier");
         configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -38,7 +38,7 @@ public class KafkaConsumerConfig {
     @Bean("moodConsumerFactory")
     public ConsumerFactory<String, MoodListnerEvent> moodConsumerFactory() {
         Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "boot-ctavlxrz.c2.kafka-serverless.us-east-1.amazonaws.com:9098");
         configProps.put(ConsumerConfig.GROUP_ID_CONFIG, "music-mood-classifier");
         configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);

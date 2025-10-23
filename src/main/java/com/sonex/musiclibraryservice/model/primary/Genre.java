@@ -1,4 +1,4 @@
-package com.sonex.musiclibraryservice.model;
+package com.sonex.musiclibraryservice.model.primary;
 
 import jakarta.persistence.*;
 import lombok.Getter;

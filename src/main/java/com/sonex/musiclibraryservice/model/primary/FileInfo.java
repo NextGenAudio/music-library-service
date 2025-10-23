@@ -1,4 +1,4 @@
-package com.sonex.musiclibraryservice.model;
+package com.sonex.musiclibraryservice.model.primary;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -70,4 +70,7 @@ public class FileInfo {
     @Column(name="metadata", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> metadata;
+
+    @Column(name="artwork_url")
+    private String artworkURL;
 }

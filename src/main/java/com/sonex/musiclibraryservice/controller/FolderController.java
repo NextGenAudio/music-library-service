@@ -1,7 +1,8 @@
 package com.sonex.musiclibraryservice.controller;
 
-import com.sonex.musiclibraryservice.model.Folder;
+import com.sonex.musiclibraryservice.model.primary.Folder;
 import com.sonex.musiclibraryservice.service.FolderService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,16 +22,17 @@ public class FolderController {
     public ResponseEntity<Folder> createFolder(
             @RequestParam("name") String name,
             @RequestParam(value = "description", required = false) String description,
-            @RequestParam(value = "artwork", required = false) MultipartFile artwork
+            @RequestParam(value = "artwork", required = false) MultipartFile artwork,
+            HttpServletRequest request
     ) {
-        Folder folder = folderService.createFolder(name, description, artwork);
+        Folder folder = folderService.createFolder(name, description, artwork, request);
         return ResponseEntity.ok(folder);
     }
 
     // Get all
     @GetMapping
-    public ResponseEntity<List<Folder>> getAllFolders() {
-        return ResponseEntity.ok(folderService.getAllFolders());
+    public ResponseEntity<List<Folder>> getAllFolders(HttpServletRequest request) {
+        return ResponseEntity.ok(folderService.getAllFolders(request));
     }
 
     // Get by ID
@@ -49,9 +51,9 @@ public class FolderController {
 
     // Delete
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteFolder(@PathVariable Long id) {
+    public ResponseEntity<String> deleteFolder(@PathVariable Long id, HttpServletRequest request) {
         try{
-            folderService.deleteFolder(id);
+            folderService.deleteFolder(id, request);
             return ResponseEntity.ok("Folder deleted successfully");
         } catch (Exception e) {
             return ResponseEntity.notFound().build();

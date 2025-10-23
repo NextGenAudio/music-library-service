@@ -2,6 +2,8 @@ package com.sonex.musiclibraryservice.service;
 
 import com.sonex.musiclibraryservice.dto.FileInfoBrief;
 import com.sonex.musiclibraryservice.dto.FileInfoMore;
+import com.sonex.musiclibraryservice.util.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.tag.images.Artwork;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,8 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.sonex.musiclibraryservice.model.FileInfo;
-import com.sonex.musiclibraryservice.repository.FileRepository;
+import com.sonex.musiclibraryservice.model.primary.FileInfo;
+import com.sonex.musiclibraryservice.repository.primary.FileRepository;
 
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
@@ -47,33 +49,32 @@ public class FileService {
     private S3Client s3Client;
     private final String bucketName = "sonex2";
 
-    Artwork artwork = null;
+    private JwtUtil jwtUtil;
 
-    public FileService(FileRepository fileRepository ) {
+    public FileService(FileRepository fileRepository, JwtUtil jwtUtil) {
         this.fileRepository = fileRepository;
+        this.jwtUtil = jwtUtil;
 
     }
 
-    private String getCurrentUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new SecurityException("Not authenticated");
+    private String getCurrentUsername(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        String username = "";
+        if(authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            username = jwtUtil.extractUsername(token);
         }
-
-        // Get the user ID (UUID you set in your filter)
-        return auth.getName();
+        return username;
     }
 
-    public FileInfo saveFile(MultipartFile file , String folderId) throws IOException {
-        String userId = getCurrentUserId();
+    public FileInfo saveFile(MultipartFile file, MultipartFile artwork, String folderId, HttpServletRequest request ) throws IOException {
+        String userId = getCurrentUsername(request);
         System.out.println("user id " + userId);
 
         String filename = Paths.get(file.getOriginalFilename()).getFileName().toString();
-
-        // ✅ Define S3 key: userId/folderId/filename
         String s3Key = userId + "/musics/" + filename;
 
-        // ✅ Upload to S3
+        // Upload audio file to S3
         try (InputStream inputStream = file.getInputStream()) {
             s3Client.putObject(
                     PutObjectRequest.builder()
@@ -85,13 +86,29 @@ public class FileService {
             );
         }
 
-        // ✅ Build S3 file URL
         String fileUrl = "https://" + bucketName + ".s3.amazonaws.com/" + s3Key;
 
-        // Metadata variables
         Tag tag = null;
         AudioHeader header = null;
-        Artwork artwork = null;
+        Artwork extractedArtwork = null;
+        String artworkUrl = null;
+
+        // If artwork is provided, upload it to S3 and set artworkURL
+        if (artwork != null && !artwork.isEmpty()) {
+            String artworkFilename = Paths.get(artwork.getOriginalFilename()).getFileName().toString();
+            String artworkS3Key = userId + "/musics/artworks/" + artworkFilename;
+            try (InputStream artworkInputStream = artwork.getInputStream()) {
+                s3Client.putObject(
+                        PutObjectRequest.builder()
+                                .bucket(bucketName)
+                                .key(artworkS3Key)
+                                .contentType(artwork.getContentType())
+                                .build(),
+                        RequestBody.fromInputStream(artworkInputStream, artwork.getSize())
+                );
+            }
+            artworkUrl = "https://" + bucketName + ".s3.amazonaws.com/" + artworkS3Key;
+        }
 
         try {
             File tempFile = File.createTempFile("upload-", filename);
@@ -99,28 +116,26 @@ public class FileService {
             AudioFile audioFile = AudioFileIO.read(tempFile);
             tag = audioFile.getTag();
             header = audioFile.getAudioHeader();
-            artwork = (tag != null) ? tag.getFirstArtwork() : null;
+            if (artwork == null || artwork.isEmpty()) {
+                extractedArtwork = (tag != null) ? tag.getFirstArtwork() : null;
+            }
             tempFile.delete(); // cleanup
         } catch (Exception e) {
             System.out.println("Warning: Unable to read metadata: " + e.getMessage());
         }
 
-
-        // ✅ Build FileInfo object
         FileInfo fileInfo = new FileInfo();
         fileInfo.setFilename(filename);
-        fileInfo.setPath(fileUrl); // ✅ S3 URL
+        fileInfo.setPath(fileUrl);
         fileInfo.setUploadedAt(LocalDateTime.now());
         fileInfo.setFolderId(Long.parseLong(folderId));
         fileInfo.setUserId(userId);
         Map<String, Object> metadata = new HashMap<>();
 
-
         if (tag != null) {
             fileInfo.setTitle(tag.getFirst(FieldKey.TITLE));
             fileInfo.setArtist(tag.getFirst(FieldKey.ARTIST));
             fileInfo.setAlbum(tag.getFirst(FieldKey.ALBUM));
-
             for (FieldKey key : FieldKey.values()) {
                 if (key == FieldKey.TITLE || key == FieldKey.ARTIST || key == FieldKey.ALBUM) continue;
                 String value = tag.getFirst(key);
@@ -139,20 +154,20 @@ public class FileService {
             metadata.put("track_length", header.getTrackLength());
         }
 
-        // ✅ Handle cover art
-        if (artwork != null) {
+        // Handle cover art
+        if (artworkUrl != null) {
+            fileInfo.setArtworkURL(artworkUrl);
+        } else if (extractedArtwork != null) {
             try {
-                byte[] imageData = artwork.getBinaryData();
+                byte[] imageData = extractedArtwork.getBinaryData();
                 String base64Image = Base64.getEncoder().encodeToString(imageData);
-                metadata.put("cover_art", "data:" + artwork.getMimeType() + ";base64," + base64Image);
+                metadata.put("cover_art", "data:" + extractedArtwork.getMimeType() + ";base64," + base64Image);
             } catch (Exception e) {
                 System.out.println("Warning: Unable to extract artwork: " + e.getMessage());
             }
         }
-        fileInfo.setMetadata(metadata); // Save as JSON in DB
-        fileInfo.setUserId(userId); // now correctly tied to the current user
-
-
+        fileInfo.setMetadata(metadata);
+        fileInfo.setUserId(userId);
 
         return fileRepository.save(fileInfo);
     }
@@ -160,8 +175,8 @@ public class FileService {
 
 
 
-    public List<FileInfoBrief> listFiles(Long folderId) {
-        String userId = getCurrentUserId();
+    public List<FileInfoBrief> listFiles(Long folderId, HttpServletRequest request) {
+        String userId = getCurrentUsername(request);
 
         if (folderId != null) {
             // filter by both user and folder
@@ -173,18 +188,18 @@ public class FileService {
     }
 
 
-    public List<FileInfo> favoriteFiles() {
-        String userId = getCurrentUserId();
+    public List<FileInfo> favoriteFiles(HttpServletRequest request) {
+        String userId = getCurrentUsername(request);
         return fileRepository.findByUserIdAndIsLikedTrue(userId);
     }
 
-    public List<FileInfo> recentFiles() {
-        String userId = getCurrentUserId();
+    public List<FileInfo> recentFiles(HttpServletRequest request) {
+        String userId = getCurrentUsername(request);
         return fileRepository.findTop5ByUserIdOrderByLastListenedAtDesc(userId);
     }
 
-    public FileInfoMore getMusicDetails(Long id) {
-        String userId =  getCurrentUserId();
+    public FileInfoMore getMusicDetails(Long id, HttpServletRequest request) {
+        String userId =  getCurrentUsername(request);
         FileInfoMore fileInfoMore = fileRepository.findFileInfoMoreById(id);
         // Ensure the file belongs to the logged-in user
 //        if (!fileInfoMore.getUserId().equals(userId)) {
@@ -200,6 +215,7 @@ public class FileService {
 
         String filename = fileInfo.getFilename();
         String userId = fileInfo.getUserId();
+        System.out.println("user id " + userId);
         System.out.println("File name " + filename);
 
         // ✅ Build the S3 key (same as when uploading)
@@ -243,16 +259,16 @@ public class FileService {
         return fileRepository.save(fileInfo);
     }
 
-    public List<FileInfo> trendingFiles() {
-        return fileRepository.findByUserIdAndYScoreGreaterThanOrderByYScoreDesc(getCurrentUserId(), 4);
+    public List<FileInfo> trendingFiles(HttpServletRequest request) {
+        return fileRepository.findByUserIdAndYScoreGreaterThanOrderByYScoreDesc(getCurrentUsername(request), 4);
     }
 
-    public List<FileInfo> mostListenedFiles() {
-        return fileRepository.findTop5ByUserIdOrderByListenCountDesc(getCurrentUserId());
+    public List<FileInfo> mostListenedFiles(HttpServletRequest request) {
+        return fileRepository.findTop5ByUserIdOrderByListenCountDesc(getCurrentUsername(request));
     }
 
-    public void deleteFile(Long id) {
-        String userId = getCurrentUserId();
+    public void deleteFile(Long id, HttpServletRequest request) {
+        String userId = getCurrentUsername(request);
 
         FileInfo fileInfo = fileRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("File not found"));
@@ -282,8 +298,8 @@ public class FileService {
         fileRepository.delete(fileInfo);
     }
 
-    public List<FileInfo> getRecommendations(String genre,String mood,String artist){
-        String userId = getCurrentUserId();
+    public List<FileInfo> getRecommendations(String genre,String mood,String artist, HttpServletRequest request) {
+        String userId = getCurrentUsername(request);
         return fileRepository.getRecommendations(userId, genre, mood, artist);
     }
 

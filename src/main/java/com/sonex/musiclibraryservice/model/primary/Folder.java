@@ -1,4 +1,4 @@
-package com.sonex.musiclibraryservice.model;
+package com.sonex.musiclibraryservice.model.primary;
 
 
 import jakarta.persistence.*;
@@ -24,7 +24,7 @@ public class Folder {
     @Column(name = "user_id", nullable=false)
     private String userId;
 
-    @Column(name="musicCount", nullable=false)
+    @Column(name="music_count", nullable=false)
     private int musicCount;
 
     @Column(name="description")

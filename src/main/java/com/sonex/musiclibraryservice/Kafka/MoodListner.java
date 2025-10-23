@@ -1,10 +1,10 @@
 package com.sonex.musiclibraryservice.Kafka;
 
-import com.sonex.musiclibraryservice.model.FileInfo;
-import com.sonex.musiclibraryservice.model.Mood;
-import com.sonex.musiclibraryservice.model.MoodListnerEvent;
-import com.sonex.musiclibraryservice.repository.FileRepository;
-import com.sonex.musiclibraryservice.repository.MoodRepository;
+import com.sonex.musiclibraryservice.model.primary.FileInfo;
+import com.sonex.musiclibraryservice.model.primary.Mood;
+import com.sonex.musiclibraryservice.model.primary.MoodListnerEvent;
+import com.sonex.musiclibraryservice.repository.primary.FileRepository;
+import com.sonex.musiclibraryservice.repository.primary.MoodRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

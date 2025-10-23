@@ -2,12 +2,9 @@ package com.sonex.musiclibraryservice.service;
 
 
 import com.sonex.musiclibraryservice.Kafka.PlaylistGenreProducer;
-import com.sonex.musiclibraryservice.model.AudioUploadEvent;
-import com.sonex.musiclibraryservice.model.FileInfo;
+import com.sonex.musiclibraryservice.model.primary.AudioUploadEvent;
+import com.sonex.musiclibraryservice.model.primary.FileInfo;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-
 
 
 @Service

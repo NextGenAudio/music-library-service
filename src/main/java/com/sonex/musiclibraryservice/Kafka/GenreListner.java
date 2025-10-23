@@ -1,10 +1,10 @@
 package com.sonex.musiclibraryservice.Kafka;
 
-import com.sonex.musiclibraryservice.model.FileInfo;
-import com.sonex.musiclibraryservice.model.Genre;
-import com.sonex.musiclibraryservice.model.GenreListnerEvent;
-import com.sonex.musiclibraryservice.repository.FileRepository;
-import com.sonex.musiclibraryservice.repository.GenreRepository;
+import com.sonex.musiclibraryservice.model.primary.FileInfo;
+import com.sonex.musiclibraryservice.model.primary.Genre;
+import com.sonex.musiclibraryservice.model.primary.GenreListnerEvent;
+import com.sonex.musiclibraryservice.repository.primary.FileRepository;
+import com.sonex.musiclibraryservice.repository.primary.GenreRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -2,14 +2,12 @@ package com.sonex.musiclibraryservice.controller;
 
 import com.sonex.musiclibraryservice.dto.FileInfoBrief;
 import com.sonex.musiclibraryservice.dto.FileInfoMore;
-import com.sonex.musiclibraryservice.service.FolderService;
-import com.sonex.musiclibraryservice.Kafka.PlaylistMoodProducer;
-import com.sonex.musiclibraryservice.model.AudioUploadEvent;
 import com.sonex.musiclibraryservice.service.GenreClassifierService;
 import com.sonex.musiclibraryservice.service.MoodClassifierService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import com.sonex.musiclibraryservice.model.FileInfo;
+import com.sonex.musiclibraryservice.model.primary.FileInfo;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.List;
 
 import com.sonex.musiclibraryservice.service.FileService;
@@ -41,10 +38,12 @@ public class FileController {
 
     @PostMapping("/upload")
     public ResponseEntity<FileInfo> uploadFile(@RequestParam("file") MultipartFile file,
-                                               @RequestParam(value = "folderId") String folderId) {
+                                               @RequestParam(value="artwork", required = false) MultipartFile artwork,
+                                               @RequestParam(value = "folderId") String folderId,
+                                               HttpServletRequest request) {
         System.out.println("folderid"+folderId);
         try {
-            FileInfo savedFile = fileService.saveFile(file, folderId);
+            FileInfo savedFile = fileService.saveFile(file ,artwork , folderId, request);
             // Call mood classification service
             moodClassifierService.sendAudioUploadEvent(savedFile);
             genreClassifierService.sendAudioUploadEvent(savedFile);
@@ -56,9 +55,9 @@ public class FileController {
     }
 
     @GetMapping("music/{id}")
-    public ResponseEntity<FileInfoMore> getMusicById(@PathVariable Long id) {
+    public ResponseEntity<FileInfoMore> getMusicById(@PathVariable Long id, HttpServletRequest request) {
         try {
-            FileInfoMore music = fileService.getMusicDetails(id);
+            FileInfoMore music = fileService.getMusicDetails(id, request);
             return ResponseEntity.ok(music);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
@@ -70,8 +69,8 @@ public class FileController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<List<FileInfoBrief>> listFiles(@RequestParam(required = false) Long folderId) {
-        return ResponseEntity.ok(fileService.listFiles(folderId));
+    public ResponseEntity<List<FileInfoBrief>> listFiles(@RequestParam(required = false) Long folderId, HttpServletRequest request) {
+        return ResponseEntity.ok(fileService.listFiles(folderId, request));
     }
 
 
@@ -148,42 +147,43 @@ public class FileController {
 
 
     @GetMapping("/most-played")
-    public ResponseEntity<List<FileInfo>> getMostListenedFiles() {
+    public ResponseEntity<List<FileInfo>> getMostListenedFiles(HttpServletRequest request) {
 
-        List<FileInfo> mostPlayedMusics = fileService.mostListenedFiles();
+        List<FileInfo> mostPlayedMusics = fileService.mostListenedFiles(request);
         return ResponseEntity.ok(mostPlayedMusics);
     }
 
     @GetMapping("/trending")
-    public ResponseEntity<List<FileInfo>> getTrendingFiles() {
+    public ResponseEntity<List<FileInfo>> getTrendingFiles(HttpServletRequest request) {
 
-        List<FileInfo> trendingMusics = fileService.trendingFiles();
+        List<FileInfo> trendingMusics = fileService.trendingFiles(request);
         return ResponseEntity.ok(trendingMusics);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteFile(@PathVariable Long id) {
-        fileService.deleteFile(id);
+    public ResponseEntity<Void> deleteFile(@PathVariable Long id, HttpServletRequest request) {
+        fileService.deleteFile(id, request);
         return ResponseEntity.noContent().build();
     }
 
 
     @GetMapping("/favorite")
-    public ResponseEntity<List<FileInfo>> favoriteFiles() {
-        return ResponseEntity.ok(fileService.favoriteFiles());
+    public ResponseEntity<List<FileInfo>> favoriteFiles(HttpServletRequest request) {
+        return ResponseEntity.ok(fileService.favoriteFiles(request));
     }
 
     @GetMapping("/recent")
-    public ResponseEntity<List<FileInfo>> recentFiles() {
-        return ResponseEntity.ok(fileService.recentFiles());
+    public ResponseEntity<List<FileInfo>> recentFiles(HttpServletRequest request) {
+        return ResponseEntity.ok(fileService.recentFiles(request));
     }
 
     @GetMapping("/recommendations")
     public ResponseEntity<List<FileInfo>> getRecommendations(
             @RequestParam(value = "genre", required = false) String genre,
             @RequestParam(value = "mood", required = false) String mood,
-            @RequestParam(value = "artist", required = false) String artist){
-        List<FileInfo> recommendations = fileService.getRecommendations(genre, mood, artist);
+            @RequestParam(value = "artist", required = false) String artist,
+            HttpServletRequest request){
+        List<FileInfo> recommendations = fileService.getRecommendations(genre, mood, artist, request);
         return ResponseEntity.ok(recommendations);
     }
 

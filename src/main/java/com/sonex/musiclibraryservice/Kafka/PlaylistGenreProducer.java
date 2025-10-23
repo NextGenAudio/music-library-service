@@ -1,7 +1,7 @@
 package com.sonex.musiclibraryservice.Kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sonex.musiclibraryservice.model.AudioUploadEvent;
+import com.sonex.musiclibraryservice.model.primary.AudioUploadEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;

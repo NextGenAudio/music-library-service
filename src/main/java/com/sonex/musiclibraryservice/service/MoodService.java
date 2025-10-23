@@ -1,7 +1,7 @@
 package com.sonex.musiclibraryservice.service;
 
-import com.sonex.musiclibraryservice.model.Mood;
-import com.sonex.musiclibraryservice.repository.MoodRepository;
+import com.sonex.musiclibraryservice.model.primary.Mood;
+import com.sonex.musiclibraryservice.repository.primary.MoodRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

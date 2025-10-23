@@ -1,8 +1,8 @@
-package com.sonex.musiclibraryservice.repository;
+package com.sonex.musiclibraryservice.repository.primary;
 
 import com.sonex.musiclibraryservice.dto.FileInfoBrief;
 import com.sonex.musiclibraryservice.dto.FileInfoMore;
-import com.sonex.musiclibraryservice.model.FileInfo;
+import com.sonex.musiclibraryservice.model.primary.FileInfo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,16 +13,17 @@ import java.util.List;
 @Repository
 public interface FileRepository extends JpaRepository<FileInfo, Long> {
 
+
     @Query("SELECT new com.sonex.musiclibraryservice.dto.FileInfoBrief(" +
             "f.id, f.filename, f.path, f.title, f.artist, f.album, f.metadata, " +
-            "CAST(f.listenCount as integer), f.isLiked) " +
+            "CAST(f.listenCount as integer), f.isLiked, f.artworkURL ) " +
             "FROM Musics f " +
             "WHERE f.userId = :userId")
     List<FileInfoBrief> findByUserId(@Param("userId") String userId);
 
     @Query("SELECT new com.sonex.musiclibraryservice.dto.FileInfoBrief(" +
             "f.id, f.filename, f.path, f.title, f.artist, f.album, f.metadata, " +
-            "CAST(f.listenCount as integer), f.isLiked) " +
+            "CAST(f.listenCount as integer), f.isLiked, f.artworkURL) " +
             "FROM Musics f " +
             "WHERE f.userId = :userId AND f.folderId = :folderId")
     List<FileInfoBrief> findByUserIdAndFolderId(@Param("userId") String userId, @Param("folderId") Long folderId);

@@ -1,6 +1,6 @@
 package com.sonex.musiclibraryservice.controller;
 
-import com.sonex.musiclibraryservice.model.Mood;
+import com.sonex.musiclibraryservice.model.primary.Mood;
 import com.sonex.musiclibraryservice.service.MoodService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

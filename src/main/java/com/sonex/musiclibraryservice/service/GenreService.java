@@ -1,7 +1,7 @@
 package com.sonex.musiclibraryservice.service;
 
-import com.sonex.musiclibraryservice.model.Genre;
-import com.sonex.musiclibraryservice.repository.GenreRepository;
+import com.sonex.musiclibraryservice.model.primary.Genre;
+import com.sonex.musiclibraryservice.repository.primary.GenreRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

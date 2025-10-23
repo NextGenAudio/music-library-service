@@ -16,9 +16,10 @@ public class FileInfoBrief {
 //    private final String genre;
 //    private final String mood;
     private final Boolean isLiked;
+    private final String artworkURL;
 //    private final String uploadedAt;
 
-    public FileInfoBrief(Long id, String filename, String path, String title, String artist, String album, Map<String, Object> metadata, Integer listenCount, Boolean isLiked) {
+    public FileInfoBrief(Long id, String filename, String path, String title, String artist, String album, Map<String, Object> metadata, Integer listenCount, Boolean isLiked, String artworkURL) {
         this.id = id;
         this.filename = filename;
         this.path = path;
@@ -31,6 +32,7 @@ public class FileInfoBrief {
 //        this.mood = mood.getMood();
         this.isLiked = isLiked;
 //        this.uploadedAt = uploadedAt;
+        this.artworkURL = artworkURL;
     }
 
     public Long getId() {
@@ -64,7 +66,12 @@ public class FileInfoBrief {
     public Integer getListenCount() {
         return listenCount;
     }
+
     public Boolean getLiked() {
         return isLiked;
+    }
+
+    public String getArtworkURL() {
+        return artworkURL;
     }
 }

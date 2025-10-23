@@ -1,8 +1,9 @@
 package com.sonex.musiclibraryservice.config;
 
-
 import com.sonex.musiclibraryservice.model.MoodListnerEvent;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import com.sonex.musiclibraryservice.model.GenreListnerEvent;
@@ -16,18 +17,32 @@ import org.springframework.kafka.annotation.EnableKafka;
 
 import java.util.HashMap;
 
-
 @Configuration
 @EnableKafka
 public class KafkaConsumerConfig {
 
-    @Bean("genreConsumerFactory")
-    public ConsumerFactory<String, GenreListnerEvent> genreConsumerFactory() {
+    private Map<String, Object> getCommonKafkaConfig() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "boot-ctavlxrz.c2.kafka-serverless.us-east-1.amazonaws.com:9098");
-        configProps.put(ConsumerConfig.GROUP_ID_CONFIG, "music-genre-classifier");
         configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+
+        // MSK IAM Authentication
+        configProps.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
+        configProps.put(SaslConfigs.SASL_MECHANISM, "OAUTHBEARER");
+        configProps.put(SaslConfigs.SASL_JAAS_CONFIG, "software.amazon.msk.auth.iam.IAMLoginModule required;");
+        configProps.put(SaslConfigs.SASL_CLIENT_CALLBACK_HANDLER_CLASS, "software.amazon.msk.auth.iam.IAMClientCallbackHandler");
+
+        // AWS Region
+        configProps.put("aws.region", "us-east-1");
+
+        return configProps;
+    }
+
+    @Bean("genreConsumerFactory")
+    public ConsumerFactory<String, GenreListnerEvent> genreConsumerFactory() {
+        Map<String, Object> configProps = getCommonKafkaConfig();
+        configProps.put(ConsumerConfig.GROUP_ID_CONFIG, "music-genre-classifier");
         configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
         configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, GenreListnerEvent.class);
         configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
@@ -37,11 +52,8 @@ public class KafkaConsumerConfig {
 
     @Bean("moodConsumerFactory")
     public ConsumerFactory<String, MoodListnerEvent> moodConsumerFactory() {
-        Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "boot-ctavlxrz.c2.kafka-serverless.us-east-1.amazonaws.com:9098");
+        Map<String, Object> configProps = getCommonKafkaConfig();
         configProps.put(ConsumerConfig.GROUP_ID_CONFIG, "music-mood-classifier");
-        configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
         configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, MoodListnerEvent.class);
         configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");

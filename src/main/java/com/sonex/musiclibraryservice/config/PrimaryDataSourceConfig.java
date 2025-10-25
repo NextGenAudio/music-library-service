@@ -1,6 +1,7 @@
 package com.sonex.musiclibraryservice.config;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -11,6 +12,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 
@@ -22,11 +25,15 @@ import javax.sql.DataSource;
 )
 @EntityScan(basePackages = "com.sonex.musiclibraryservice.model.primary")
 public class PrimaryDataSourceConfig {
-
+    @Value("${spring.datasource.primary.jdbc-url}")
+    private String jdbcUrl;
+    private static final Logger LOGGER = LoggerFactory.getLogger(PrimaryDataSourceConfig.class);
     @Primary
     @Bean(name = "primaryDataSource")
     @ConfigurationProperties(prefix = "spring.datasource.primary")
+
     public DataSource primaryDataSource() {
+        LOGGER.info("JDBC URL: {}", jdbcUrl);
         return DataSourceBuilder.create().build();
     }
 

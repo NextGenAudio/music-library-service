@@ -51,6 +51,9 @@ public class KafkaConsumerConfig {
 
         // AWS Region
         configProps.put("aws.region", "us-east-1");
+        configProps.put("security.protocol", "SASL_SSL");
+        configProps.put("sasl.mechanism", "AWS_MSK_IAM");
+
 
         LOGGER.info("Kafka config initialized with bootstrap servers: {}",
                 configProps.get(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG));

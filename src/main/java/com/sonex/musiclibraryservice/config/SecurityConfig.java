@@ -36,6 +36,8 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        // Allow preflight OPTIONS requests
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         // FileController endpoints
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/files/upload").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/files/music/{id}").permitAll()
@@ -82,7 +84,11 @@ public class SecurityConfig {
         CorsConfiguration configuration=new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization","Content-Type","Accept"));
+        // Allow the custom header used by the frontend and commonly-used headers.
+        // Using "*" for allowed headers makes it flexible for additional custom headers.
+        configuration.setAllowedHeaders(List.of("*"));
+        // Expose the custom header so client-side JS can read it if the server sends it back.
+        configuration.setExposedHeaders(List.of("Content-Disposition", "Accept-Ranges", "Content-Range", "Content-Length", "Content-Type", "x-session-token"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source=new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**",configuration);

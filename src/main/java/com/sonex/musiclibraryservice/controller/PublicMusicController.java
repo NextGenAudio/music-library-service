@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-    @RequestMapping("/public/music")
+@RequestMapping("/public/music")
 public class PublicMusicController {
     @Autowired
     PublicMusicService publicMusicService;

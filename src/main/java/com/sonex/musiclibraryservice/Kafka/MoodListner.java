@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MoodListner {
@@ -29,6 +30,7 @@ public class MoodListner {
             groupId = "music-mood-classifier",
             containerFactory = "moodKafkaListenerContainerFactory"
     )
+    @Transactional
     public void consume(MoodListnerEvent message) {
         try {
             LOGGER.info("Retrieved the mood event: fileId={}, mood={}", message.getFileId(), message.getMood());
@@ -41,17 +43,16 @@ public class MoodListner {
                 mood.setMood(message.getMood());
                 mood.setDescription("Auto-generated mood from classification");
                 mood = moodRepository.save(mood);
-                LOGGER.info("Created new mood: {}", mood.getMood());
+                LOGGER.info("Created new mood: {} (id={})", mood.getMood(), mood.getId());
             }
 
-            // 2. Find file and set mood
-            FileInfo fileInfo = fileRepository.findById(message.getFileId())
-                    .orElseThrow(() -> new RuntimeException("File not found with ID: " + message.getFileId()));
-
-            fileInfo.setMood(mood);
-
-            // 3. Save file
-            fileRepository.save(fileInfo);
+            // 2. Atomically update mood_id in DB to avoid overwriting other fields
+            int updated = fileRepository.updateMoodIdById(message.getFileId(), mood.getId());
+            if (updated > 0) {
+                LOGGER.info("Updated mood_id for file {} -> mood id {} (rows={})", message.getFileId(), mood.getId(), updated);
+            } else {
+                LOGGER.warn("No rows updated when setting mood_id for file {}", message.getFileId());
+            }
 
             LOGGER.info("Successfully updated file {} with mood {}", message.getFileId(), message.getMood());
 

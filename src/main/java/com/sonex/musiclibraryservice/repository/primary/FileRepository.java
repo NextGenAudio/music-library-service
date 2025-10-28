@@ -5,6 +5,8 @@ import com.sonex.musiclibraryservice.dto.FileInfoMore;
 import com.sonex.musiclibraryservice.model.primary.FileInfo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -42,6 +44,7 @@ public interface FileRepository extends JpaRepository<FileInfo, Long> {
     List<FileInfo> findByUserIdAndYScoreGreaterThanOrderByYScoreDesc(@Param("userId") String userId, @Param("yScoreThreshold") float yScoreThreshold);
 
     // Top 5 most listened songs
+    @Query(value = "SELECT f FROM Musics f WHERE f.userId = :userId ORDER BY f.listenCount DESC NULL LAST LIMIT 5", nativeQuery = true)
     List<FileInfo> findTop5ByUserIdOrderByListenCountDesc(String userId);
 
     @Query(value = "SELECT mu.id, mu.album, mu.artist, mu.filename, mu.folder_id, mu.genre_id, mu.is_liked, mu.last_listened_at, mu.listen_count, mu.metadata, mu.mood_id, mu.path, mu.title, mu.uploaded_at, mu.user_id, mu.x_score, mu.y_score, " +
@@ -69,5 +72,15 @@ public interface FileRepository extends JpaRepository<FileInfo, Long> {
             "LEFT JOIN moods mo ON m.mood_id = mo.id " +
             "WHERE m.id = :id", nativeQuery = true)
     FileInfoMore findFileInfoMoreById(@Param("id") Long id);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE musics SET genre_id = :genreId WHERE id = :id", nativeQuery = true)
+    int updateGenreIdById(@Param("id") Long id, @Param("genreId") Long genreId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE musics SET mood_id = :moodId WHERE id = :id", nativeQuery = true)
+    int updateMoodIdById(@Param("id") Long id, @Param("moodId") Long moodId);
 
 }

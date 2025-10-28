@@ -36,6 +36,10 @@ public class SecondaryDataSourceConfig {
         em.setDataSource(dataSource);
         em.setPackagesToScan("com.sonex.musiclibraryservice.model.secondary");
         em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+        java.util.Map<String, Object> props = new java.util.HashMap<>();
+        props.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+        em.setJpaPropertyMap(props);
+        em.setPersistenceUnitName("secondary");
         return em;
     }
 

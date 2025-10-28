@@ -39,6 +39,12 @@ public class PrimaryDataSourceConfig {
         em.setDataSource(dataSource);
         em.setPackagesToScan("com.sonex.musiclibraryservice.model.primary");
         em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+        // Ensure Hibernate has the dialect when JDBC metadata is not present
+        java.util.Map<String, Object> props = new java.util.HashMap<>();
+        props.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+        em.setJpaPropertyMap(props);
+        // set a persistence unit name to avoid ambiguous shared EM bean naming
+        em.setPersistenceUnitName("primary");
         return em;
     }
 
